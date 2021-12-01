@@ -2,7 +2,6 @@ package com.ostafen.flutter_foreground_worker;
 
 import android.content.Context;
 import android.content.Intent;
-import android.content.SharedPreferences;
 import android.os.Build;
 import android.util.Log;
 
@@ -12,6 +11,7 @@ import androidx.lifecycle.LifecycleOwner;
 
 import com.ostafen.flutter_foreground_worker.channel.AppMethodChannel;
 import com.ostafen.flutter_foreground_worker.channel.ServiceMethodChannel;
+import com.ostafen.flutter_foreground_worker.options.ServiceOptions;
 
 import io.flutter.embedding.android.FlutterActivity;
 import io.flutter.embedding.engine.plugins.FlutterPlugin;
@@ -31,8 +31,9 @@ public class ForegroundServiceManager {
     private void createAppMethodChannel(BinaryMessenger messenger) {
         AppMethodChannel channel = new AppMethodChannel(messenger);
 
-        channel.onStartForegroundService((callbackHandle) -> {
-            setCallbackHandle(callbackHandle);
+        channel.onStartForegroundService((optionsMap) -> {
+            ServiceOptions options = ServiceOptions.fromMap(optionsMap);
+            ServiceOptions.setInstance(options);
             startForegroundService();
         });
 
@@ -69,11 +70,5 @@ public class ForegroundServiceManager {
     private void stopForegroundService() {
         Intent intent = new Intent(flutterActivity, ForegroundService.class);
         flutterActivity.stopService(intent);
-    }
-
-    private void setCallbackHandle(Long callbackHandle) {
-        SharedPreferences preferences = appContext
-                .getSharedPreferences(ServicePreferences.PREFERENCES_KEY, Context.MODE_PRIVATE);
-        preferences.edit().putLong(ServicePreferences.CALLBACK_HANDLE_KEY, callbackHandle).commit();
     }
 }

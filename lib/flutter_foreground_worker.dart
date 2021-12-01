@@ -4,6 +4,7 @@ import 'dart:ui';
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_foreground_worker/notification_options.dart';
 
 class FlutterForegroundWorker {
   static final _streamController = StreamController<Map<String, dynamic>>.broadcast();
@@ -24,9 +25,15 @@ class FlutterForegroundWorker {
     await _channel.invokeMethod("sendMessage",  jsonEncode(msg));
   }
 
-  static Future<void> startForegroundService(Function mainFunction) async {
-    var callbackHandle = PluginUtilities.getCallbackHandle(mainFunction)!.toRawHandle();
-    await _channel.invokeMethod("startForegroundService", callbackHandle);
+  static Future<void> startForegroundService({
+        NotificationOptions? notificationOptions,
+        required Function entryPoint
+      }) async {
+    var entryPointHandle = PluginUtilities.getCallbackHandle(entryPoint)!.toRawHandle();
+    var options = {};
+    options['notification'] = notificationOptions != null ? notificationOptions.toJson() : {};
+    options['callbackHandle'] = entryPointHandle;
+    await _channel.invokeMethod("startForegroundService", options);
   }
 
   static Future<void> stopForegroundService() async {
@@ -68,12 +75,11 @@ class FlutterForegroundWorker {
 }
 
 abstract class ForegroundWorker {
-  late MethodChannel channel;
-
+  late MethodChannel _channel;
   late Stream<Map<String, dynamic>> messageStream;
 
   void _setMethodChannel(MethodChannel channel) {
-    this.channel = channel;
+    _channel = channel;
   }
 
   void _setMessageStream(Stream<Map<String, dynamic>> stream) {
@@ -81,11 +87,11 @@ abstract class ForegroundWorker {
   }
 
   void shutdown() {
-    channel.invokeMethod("stop");
+    _channel.invokeMethod("stop");
   }
 
   Future<void> send(Map<String, dynamic> message) async {
-    await channel.invokeMethod("send", jsonEncode(message));
+    await _channel.invokeMethod("send", jsonEncode(message));
   }
 
   void run();

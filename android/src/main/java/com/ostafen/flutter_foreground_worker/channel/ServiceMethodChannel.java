@@ -5,7 +5,6 @@ import android.util.Log;
 import java.util.function.Consumer;
 
 import io.flutter.plugin.common.BinaryMessenger;
-import io.flutter.plugin.common.MethodChannel;
 
 public class ServiceMethodChannel extends MethodChannelAdapter {
     private static final String CHANNEL_NAME = "service";

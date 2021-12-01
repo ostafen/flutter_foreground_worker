@@ -30,6 +30,6 @@ android {
     }
 
     defaultConfig {
-        minSdkVersion 26
+        minSdkVersion 23
     }
 }

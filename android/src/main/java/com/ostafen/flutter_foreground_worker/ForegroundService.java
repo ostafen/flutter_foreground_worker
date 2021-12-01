@@ -8,16 +8,18 @@ import android.app.PendingIntent;
 import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
-import android.content.SharedPreferences;
-import android.graphics.Color;
+import android.os.Build;
 import android.os.IBinder;
 import android.util.Log;
 
 import androidx.annotation.Nullable;
+import androidx.annotation.RequiresApi;
 import androidx.core.app.NotificationCompat;
 
 import com.ostafen.flutter_foreground_worker.channel.AppMethodChannel;
 import com.ostafen.flutter_foreground_worker.channel.ServiceMethodChannel;
+import com.ostafen.flutter_foreground_worker.options.NotificationOptions;
+import com.ostafen.flutter_foreground_worker.options.ServiceOptions;
 
 import io.flutter.FlutterInjector;
 import io.flutter.embedding.engine.FlutterEngine;
@@ -26,28 +28,21 @@ import io.flutter.embedding.engine.loader.FlutterLoader;
 import io.flutter.view.FlutterCallbackInformation;
 
 public class ForegroundService extends Service {
-    private static final String CHANNEL_ID = "APP_SERVICE_CHANNEL_NAME";
     private static final int NOTIFICATION_ID = 101;
 
     public static boolean isRunning = false;
 
     private FlutterEngine engine;
 
-    private ServicePreferences getServicePreferences() {
-        SharedPreferences preferences = getApplicationContext()
-                .getSharedPreferences(ServicePreferences.PREFERENCES_KEY, Context.MODE_PRIVATE);
-        return new ServicePreferences(preferences);
-    }
-
     @Override
     public void onCreate()  {
         super.onCreate();
 
-        ServicePreferences preferences = getServicePreferences();
-        long serviceCallbackHandle = preferences.getServiceCallbackHandle();
+        ServiceOptions options = ServiceOptions.getInstance();
+        long serviceCallbackHandle = options.getCallbackHandle();
 
         //if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-        createNotificationChannel(preferences);
+        createNotificationChannel(options.getNotificationOptions());
         //}
         isRunning = true;
         ServiceMethodChannel serviceChannel = getForegroundServiceMethodChannel(serviceCallbackHandle);
@@ -64,38 +59,83 @@ public class ForegroundService extends Service {
         return null;
     }
 
-    private void createNotificationChannel(ServicePreferences preferences) {
+    private String getAppName() {
+        return getApplicationInfo().loadLabel(getPackageManager()).toString();
+    }
+
+    private String getChannelName(String name) {
+        if(!name.isEmpty())
+            return name;
+        return getAppName();
+    }
+
+    @RequiresApi(api = Build.VERSION_CODES.O)
+    @SuppressLint("WrongConstant")
+    private void createNotificationChannelSdk26OrLater(NotificationOptions options, PendingIntent pendingIntent) {
+        NotificationChannel channel = new NotificationChannel(
+                options.getChannelId(),
+                getChannelName(options.getChannelName()),
+                options.getChannelImportance()
+        );
+        channel.setDescription(options.getChannelDescription());
+        channel.enableVibration(options.getEnableVibration());
+
+        if (!options.getPlaySound())
+            channel.setSound(null, null);
+
+        NotificationManager notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+        notificationManager.createNotificationChannel(channel);
+
+        Notification.Builder builder = new Notification.Builder(this, options.getChannelId());
+        builder.setOngoing(true)
+                .setShowWhen(options.getShowWhen())
+                .setSmallIcon(getSmallIconId())
+                .setContentIntent(pendingIntent)
+                .setContentTitle(options.getNotificationContentTitle())
+                .setContentText(options.getNotificationContentText())
+                .setVisibility(options.getVisibility());
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            builder.setForegroundServiceBehavior(Notification.FOREGROUND_SERVICE_IMMEDIATE);
+        }
+        startForeground(NOTIFICATION_ID, builder.build());
+    }
+
+    @SuppressLint("WrongConstant")
+    private void createNotificationChannelOlderSdk(NotificationOptions options, PendingIntent pendingIntent) {
+        NotificationCompat.Builder builder = new NotificationCompat.Builder(this, options.getChannelId());
+        builder.setOngoing(true)
+                .setShowWhen(options.getShowWhen())
+                .setSmallIcon(getSmallIconId())
+                .setContentIntent(pendingIntent)
+                .setContentTitle(options.getNotificationContentText())
+                .setContentText(options.getNotificationContentText())
+                .setVisibility(options.getVisibility());
+
+        if (!options.getEnableVibration()) {
+            builder.setVibrate(new long[]{0L});
+        }
+
+        if (!options.getPlaySound()) {
+            builder.setSound(null);
+        }
+
+        builder.setPriority(options.getPriority());
+        startForeground(NOTIFICATION_ID, builder.build());
+    }
+
+    @SuppressLint("WrongConstant")
+    private void createNotificationChannel(NotificationOptions options) {
         Intent launchIntentForPackage = getApplicationContext()
                 .getPackageManager()
                 .getLaunchIntentForPackage(getApplicationContext().getPackageName());
-
         PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, launchIntentForPackage, PendingIntent.FLAG_IMMUTABLE);
 
-        String channelName = preferences.getChannelName();
-        NotificationChannel notificationChannel = new NotificationChannel(CHANNEL_ID, channelName, NotificationManager.IMPORTANCE_NONE);
-
-        if(!preferences.getPlaySound())
-            notificationChannel.setSound(null, null);
-
-        notificationChannel.setDescription(preferences.getChannelDescription());
-        notificationChannel.setLightColor(Color.BLUE);
-        notificationChannel.setLockscreenVisibility(Notification.VISIBILITY_PRIVATE);
-        NotificationManager manager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
-        manager.createNotificationChannel(notificationChannel);
-
-        NotificationCompat.Builder notificationBuilder = new NotificationCompat.Builder(this, CHANNEL_ID);
-        @SuppressLint("WrongConstant")
-        Notification notification = notificationBuilder
-                .setOngoing(true)
-                .setShowWhen(preferences.getShowWhen())
-                .setSmallIcon(getSmallIconId())
-                .setContentTitle(preferences.getNotificationContentTitle())
-                .setContentText(preferences.getNotificationContentText())
-                .setContentIntent(pendingIntent)
-                .setVisibility(preferences.getVisibility())
-                .build();
-
-        startForeground(NOTIFICATION_ID, notification);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            createNotificationChannelSdk26OrLater(options, pendingIntent);
+        } else {
+            createNotificationChannelOlderSdk(options, pendingIntent);
+        }
     }
 
     public ServiceMethodChannel getForegroundServiceMethodChannel(long callbackHandle) {

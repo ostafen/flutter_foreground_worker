@@ -2,12 +2,11 @@ package com.ostafen.flutter_foreground_worker.channel;
 
 import android.util.Log;
 
+import java.util.Map;
 import java.util.function.Consumer;
-import java.util.function.Function;
 import java.util.function.Supplier;
 
 import io.flutter.plugin.common.BinaryMessenger;
-import io.flutter.plugin.common.MethodChannel;
 
 public class AppMethodChannel extends MethodChannelAdapter {
     private static AppMethodChannel instance;
@@ -25,8 +24,8 @@ public class AppMethodChannel extends MethodChannelAdapter {
         AppMethodChannel.instance = instance;
     }
 
-    public void onStartForegroundService(Consumer<Long> callbackConsumer) {
-        onMethodCall(CALL_START_SERVICE, (Long callbackHandle) -> {
+    public void onStartForegroundService(Consumer<Map<String, Object>> callbackConsumer) {
+        onMethodCall(CALL_START_SERVICE, (Map<String, Object> callbackHandle) -> {
            callbackConsumer.accept(callbackHandle);
            return null;
         });
