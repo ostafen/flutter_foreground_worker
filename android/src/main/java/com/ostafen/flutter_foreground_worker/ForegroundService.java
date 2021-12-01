@@ -25,6 +25,7 @@ import io.flutter.FlutterInjector;
 import io.flutter.embedding.engine.FlutterEngine;
 import io.flutter.embedding.engine.dart.DartExecutor;
 import io.flutter.embedding.engine.loader.FlutterLoader;
+import io.flutter.plugin.common.BinaryMessenger;
 import io.flutter.view.FlutterCallbackInformation;
 
 public class ForegroundService extends Service {
@@ -37,20 +38,18 @@ public class ForegroundService extends Service {
     @Override
     public void onCreate()  {
         super.onCreate();
-
         ServiceOptions options = ServiceOptions.getInstance();
-        long serviceCallbackHandle = options.getCallbackHandle();
-
-        //if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
         createNotificationChannel(options.getNotificationOptions());
-        //}
         isRunning = true;
-        ServiceMethodChannel serviceChannel = getForegroundServiceMethodChannel(serviceCallbackHandle);
-        serviceChannel.onSendMessage(AppMethodChannel::sendMessage);
-        serviceChannel.onStop(this::stopForegroundService);
-        ServiceMethodChannel.setInstance(serviceChannel);
+        engine = execServiceEntryPoint(options.getCallbackHandle());
+        createServiceChannel(engine.getDartExecutor().getBinaryMessenger());
+    }
 
-        //channel.setMethodCallHandler(this);
+    private void createServiceChannel(BinaryMessenger messenger) {
+        ServiceMethodChannel channel = new ServiceMethodChannel(messenger);
+        channel.onSendMessage(AppMethodChannel::sendMessage);
+        channel.onStop(this::stopForegroundService);
+        ServiceMethodChannel.setInstance(channel);
     }
 
     @Nullable
@@ -138,21 +137,21 @@ public class ForegroundService extends Service {
         }
     }
 
-    public ServiceMethodChannel getForegroundServiceMethodChannel(long callbackHandle) {
+    public FlutterEngine execServiceEntryPoint(long serviceEntryPointHandle) {
         Context ctx = getApplicationContext();
-        engine = new FlutterEngine(ctx.getApplicationContext());
+        FlutterEngine engine = new FlutterEngine(ctx.getApplicationContext());
         FlutterLoader loader = FlutterInjector.instance().flutterLoader();
         loader.startInitialization(this);
         loader.ensureInitializationComplete(this, null);
 
-        FlutterCallbackInformation callbackInfo = FlutterCallbackInformation.lookupCallbackInformation(callbackHandle);
+        FlutterCallbackInformation callbackInfo = FlutterCallbackInformation.lookupCallbackInformation(serviceEntryPointHandle);
         String appBundlePath = loader.findAppBundlePath();
 
         Log.d("NATIVE", appBundlePath);
 
         DartExecutor.DartCallback dartCallback = new DartExecutor.DartCallback(getAssets(), appBundlePath, callbackInfo);
         engine.getDartExecutor().executeDartCallback(dartCallback);
-        return new ServiceMethodChannel(engine.getDartExecutor().getBinaryMessenger());
+        return engine;
     }
 
     private int getSmallIconId() {
