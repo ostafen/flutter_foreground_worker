@@ -90,8 +90,8 @@ public class ForegroundService extends Service {
                 .setShowWhen(options.getShowWhen())
                 .setSmallIcon(getSmallIconId())
                 .setContentIntent(pendingIntent)
-                .setContentTitle(options.getNotificationContentTitle())
-                .setContentText(options.getNotificationContentText())
+                .setContentTitle(options.getContentTitle())
+                .setContentText(options.getContentText())
                 .setVisibility(options.getVisibility());
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
@@ -107,8 +107,8 @@ public class ForegroundService extends Service {
                 .setShowWhen(options.getShowWhen())
                 .setSmallIcon(getSmallIconId())
                 .setContentIntent(pendingIntent)
-                .setContentTitle(options.getNotificationContentText())
-                .setContentText(options.getNotificationContentText())
+                .setContentTitle(options.getContentTitle())
+                .setContentText(options.getContentText())
                 .setVisibility(options.getVisibility());
 
         if (!options.getEnableVibration()) {

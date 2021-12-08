@@ -11,8 +11,8 @@ public class NotificationOptions {
     public static final String CHANNEL_ID_KEY = "channelId";
     public static final String CHANNEL_NAME_KEY = "channelName";
     public static final String CHANNEL_DESCRIPTION_KEY = "channelDescription";
-    public static final String NOTIFICATION_CONTENT_TITLE_KEY = "notificationContentTitle";
-    public static final String NOTIFICATION_CONTENT_TEXT_KEY = "notificationContentText";
+    public static final String CONTENT_TITLE_KEY = "contentTitle";
+    public static final String CONTENT_TEXT_KEY = "contentText";
     public static final String SHOW_WHEN_KEY = "showWhen";
     public static final String PLAY_SOUND_KEY = "playSound";
     public static final String VISIBILITY_KEY = "visibility";
@@ -28,8 +28,6 @@ public class NotificationOptions {
     private String channelId;
     private String channelName;
     private String channelDescription;
-    private String notificationContentTitle;
-    private String notificationContentText;
     private int channelImportance;
     private int priority;
     private String contentTitle;
@@ -58,8 +56,8 @@ public class NotificationOptions {
         channelId = getOrDefault(options, CHANNEL_ID_KEY, CHANNEL_ID_DEFAULT);
         channelName = getOrDefault(options, CHANNEL_NAME_KEY, "");
         channelDescription = getOrDefault(options, CHANNEL_DESCRIPTION_KEY, CHANNEL_DESCRIPTION_DEFAULT);
-        notificationContentTitle = getOrDefault(options, NOTIFICATION_CONTENT_TITLE_KEY, CONTENT_TITLE_DEFAULT);
-        notificationContentText = getOrDefault(options, NOTIFICATION_CONTENT_TEXT_KEY, CONTENT_TEXT_DEFAULT);
+        contentTitle = getOrDefault(options, CONTENT_TITLE_KEY, CONTENT_TITLE_DEFAULT);
+        contentText = getOrDefault(options, CONTENT_TEXT_KEY, CONTENT_TEXT_DEFAULT);
         channelImportance = getOrDefault(options, CHANNEL_IMPORTANCE_KEY, 3); // importance default
         showWhen = getOrDefault(options, SHOW_WHEN_KEY, false);
         playSound = getOrDefault(options, PLAY_SOUND_KEY, false);
@@ -86,12 +84,12 @@ public class NotificationOptions {
         return channelDescription;
     }
 
-    public String getNotificationContentTitle() {
-        return notificationContentTitle;
+    public String getContentTitle() {
+        return contentTitle;
     }
 
-    public String getNotificationContentText() {
-        return notificationContentText;
+    public String getContentText() {
+        return contentText;
     }
 
     public boolean getShowWhen() {
